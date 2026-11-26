@@ -38,6 +38,13 @@ open build/Build/Products/Debug/VolumioBar.app
 - `VolumioAPI`: URLSession REST client with lenient JSON decoding (numbers may arrive as strings or null).
 - `ContentView` / `DeviceRow`: the UI. `$device.sliderVolume` is a computed get/set property, used instead of `Binding(get:set:)` to avoid closure isolation issues.
 
+## iOS: VolumioRemote/
+
+- Separate Xcode project `VolumioRemote/VolumioRemote.xcodeproj` (iOS 17): app target `VolumioRemote` (synced folders `App/` + `Shared/`) and widget extension `VolumioRemoteWidget` (`Widget/` + `Shared/`). Info.plists in `VolumioRemote/Config/`.
+- Interactive widget buttons use `Button(intent: PlayerCommandIntent)`. The player address is a `WidgetConfigurationIntent` parameter (no App Group, so it works with a free Apple ID). The app has its own address in `@AppStorage`.
+- Compiles with Xcode 26.2 for simulator and device. Building with `-destination` needs the iOS platform installed (Xcode › Settings › Components).
+- `VOLUMIO_BUNDLE_PREFIX` build setting sets both bundle IDs.
+
 ## Ideas for next steps
 
 - Global hotkeys or media keys for the volume of a chosen player
