@@ -198,45 +198,72 @@ struct TransportControls: View {
     }
 }
 
-/// Mute, -, ten tappable level segments, +, and the level as a number.
-struct VolumeControls: View {
+/// Big grey − and + keys with the level between them. Tapping the level toggles mute.
+struct VolumeKeys: View {
     let address: String
     let state: PlayerState
-    var showSegments = true
+    var keyWidth: CGFloat = 56
+    var keyHeight: CGFloat = 40
 
     var body: some View {
         if state.volumeControlDisabled {
-            Text("Volume control is off on this player")
+            Text("Volume control is off")
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.6))
         } else {
-            let volume = state.volume ?? 0
-            HStack(spacing: 4) {
-                ControlButton(address: address, action: PlayerAction.mute,
-                              systemImage: state.mute ? "speaker.slash.fill" : "speaker.wave.2.fill",
-                              size: 15, tint: state.mute ? accent : .white)
-                ControlButton(address: address, action: PlayerAction.volumeDown, systemImage: "minus", size: 15)
-                if showSegments {
-                    HStack(spacing: 3) {
-                        ForEach(1...10, id: \.self) { step in
-                            let level = step * 10
-                            Button(intent: PlayerCommandIntent(address: address, action: PlayerAction.setVolume(level))) {
-                                RoundedRectangle(cornerRadius: 3, style: .continuous)
-                                    .fill(volume >= level - 5 ? (state.mute ? Color.white.opacity(0.45) : accent) : Color.white.opacity(0.2))
-                                    .frame(height: 14)
-                                    .frame(maxWidth: .infinity, minHeight: 36)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
+            HStack(spacing: 6) {
+                key("minus", PlayerAction.volumeDown)
+                Button(intent: PlayerCommandIntent(address: address, action: PlayerAction.mute)) {
+                    Group {
+                        if state.mute {
+                            Image(systemName: "speaker.slash.fill")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(accent)
+                        } else {
+                            Text("\(state.volume ?? 0)")
+                                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                                .monospacedDigit()
                         }
                     }
+                    .frame(minWidth: 38, minHeight: keyHeight)
+                    .contentShape(Rectangle())
                 }
-                ControlButton(address: address, action: PlayerAction.volumeUp, systemImage: "plus", size: 15)
-                Text(state.mute ? "Muted" : "\(volume)")
-                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                    .monospacedDigit()
-                    .frame(minWidth: 28, alignment: .trailing)
-                    .padding(.trailing, 2)
+                .buttonStyle(.plain)
+                key("plus", PlayerAction.volumeUp)
+            }
+        }
+    }
+
+    private func key(_ systemImage: String, _ action: String) -> some View {
+        Button(intent: PlayerCommandIntent(address: address, action: action)) {
+            Image(systemName: systemImage)
+                .font(.system(size: 20, weight: .bold))
+                .frame(width: keyWidth, height: keyHeight)
+                .background(Color.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Ten tappable level segments, 10% to 100%.
+struct VolumeSegments: View {
+    let address: String
+    let state: PlayerState
+
+    var body: some View {
+        let volume = state.volume ?? 0
+        HStack(spacing: 3) {
+            ForEach(1...10, id: \.self) { step in
+                let level = step * 10
+                Button(intent: PlayerCommandIntent(address: address, action: PlayerAction.setVolume(level))) {
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(volume >= level - 5 ? (state.mute ? Color.white.opacity(0.45) : accent) : Color.white.opacity(0.2))
+                        .frame(height: 10)
+                        .frame(maxWidth: .infinity, minHeight: 26)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
         }
     }
@@ -272,7 +299,15 @@ struct LargePlayerView: View {
                 Spacer()
             }
             Spacer(minLength: 8)
-            VolumeControls(address: address, state: state)
+            if !state.volumeControlDisabled {
+                VolumeSegments(address: address, state: state)
+                Spacer(minLength: 8)
+            }
+            HStack {
+                Spacer(minLength: 0)
+                VolumeKeys(address: address, state: state, keyWidth: 72, keyHeight: 44)
+                Spacer(minLength: 0)
+            }
         }
         .padding(16)
     }
@@ -300,12 +335,12 @@ struct MediumPlayerView: View {
             HStack(spacing: 0) {
                 TransportControls(address: address, state: state, scale: 0.7)
                 Spacer(minLength: 8)
-                VolumeControls(address: address, state: state, showSegments: false)
+                VolumeKeys(address: address, state: state, keyWidth: 50, keyHeight: 40)
                     .fixedSize()
             }
         }
         .padding(.leading, 12)
-        .padding(.trailing, 18)
+        .padding(.trailing, 14)
         .padding(.vertical, 12)
     }
 }
