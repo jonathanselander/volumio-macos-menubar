@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Shown in the "allow local network access" prompt. The widget uses the app's permission. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Volumio Remote talks to the Volumio player on your network.</string>
+	<!-- Volumio's API is plain HTTP on your LAN. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

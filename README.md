@@ -10,6 +10,8 @@ A macOS menu bar app that finds every Volumio player on your network (miniDSP SH
 - Add players by IP when discovery can't see them (other subnet/VLAN)
 - Launch at login checkbox
 
+For iPhone/iPad there's [Volumio Remote](VolumioRemote/README.md), an app with an interactive home screen widget, and a simpler [Scriptable widget](scriptable/README.md).
+
 ## Requirements
 
 - macOS 14 Sonoma or newer
