@@ -6,13 +6,24 @@ struct PlayerConfigIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource = "Volumio player"
     static var description = IntentDescription("Which Volumio player the widget shows and controls.")
 
-    @Parameter(title: "Address", description: "IP address or hostname, e.g. 192.168.1.40", default: "volumio.local")
-    var address: String
+    // The app and the widget can't share settings without an App Group, which
+    // free Apple ID signing doesn't allow, so the widget has its own address.
+    // Keep the property name "address" so widgets that already have one keep it.
+    @Parameter(title: "Address", description: "IP address or hostname, e.g. 192.168.1.40")
+    var address: String?
 
     init() {}
 
-    init(address: String) {
+    init(address: String?) {
         self.address = address
+    }
+
+    /// The trimmed address, or nil when it hasn't been set yet.
+    var playerAddress: String? {
+        guard let text = address?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else {
+            return nil
+        }
+        return text
     }
 }
 

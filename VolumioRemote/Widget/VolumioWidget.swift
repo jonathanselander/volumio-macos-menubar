@@ -28,7 +28,8 @@ struct VolumioWidget: Widget {
 
 struct PlayerEntry: TimelineEntry {
     var date: Date
-    var address: String
+    /// nil until the address is set in Edit Widget.
+    var address: String?
     var state: PlayerState?
     var artwork: UIImage?
     var error: String?
@@ -43,17 +44,20 @@ struct PlayerProvider: AppIntentTimelineProvider {
         if context.isPreview {
             return placeholder(in: context)
         }
-        return await load(configuration.address)
+        return await load(configuration.playerAddress)
     }
 
     func timeline(for configuration: PlayerConfigIntent, in context: Context) async -> Timeline<PlayerEntry> {
-        let entry = await load(configuration.address)
+        let entry = await load(configuration.playerAddress)
         // iOS decides the real refresh rate. Taps on the buttons reload right away.
         let next = Date().addingTimeInterval(entry.state?.isPlaying == true ? 5 * 60 : 15 * 60)
         return Timeline(entries: [entry], policy: .after(next))
     }
 
-    private func load(_ address: String) async -> PlayerEntry {
+    private func load(_ address: String?) async -> PlayerEntry {
+        guard let address else {
+            return PlayerEntry(date: .now, address: nil)
+        }
         do {
             let state = try await VolumioClient.state(at: address)
             var artwork: UIImage?
@@ -78,14 +82,16 @@ struct PlayerWidgetView: View {
 
     var body: some View {
         Group {
-            if let state = entry.state {
+            if let address = entry.address, let state = entry.state {
                 switch family {
-                case .systemSmall: SmallPlayerView(entry: entry, state: state)
-                case .systemMedium: MediumPlayerView(entry: entry, state: state)
-                default: LargePlayerView(entry: entry, state: state)
+                case .systemSmall: SmallPlayerView(entry: entry, address: address, state: state)
+                case .systemMedium: MediumPlayerView(entry: entry, address: address, state: state)
+                default: LargePlayerView(entry: entry, address: address, state: state)
                 }
+            } else if let address = entry.address {
+                ErrorView(address: address, message: entry.error)
             } else {
-                ErrorView(entry: entry)
+                SetupView()
             }
         }
         .foregroundStyle(.white)
@@ -237,6 +243,7 @@ struct VolumeControls: View {
 
 struct LargePlayerView: View {
     let entry: PlayerEntry
+    let address: String
     let state: PlayerState
 
     var body: some View {
@@ -260,11 +267,11 @@ struct LargePlayerView: View {
             Spacer(minLength: 8)
             HStack {
                 Spacer()
-                TransportControls(address: entry.address, state: state, scale: 1.25)
+                TransportControls(address: address, state: state, scale: 1.25)
                 Spacer()
             }
             Spacer(minLength: 8)
-            VolumeControls(address: entry.address, state: state)
+            VolumeControls(address: address, state: state)
         }
         .padding(16)
     }
@@ -272,6 +279,7 @@ struct LargePlayerView: View {
 
 struct MediumPlayerView: View {
     let entry: PlayerEntry
+    let address: String
     let state: PlayerState
 
     var body: some View {
@@ -288,9 +296,9 @@ struct MediumPlayerView: View {
             }
             Spacer(minLength: 0)
             HStack(spacing: 0) {
-                TransportControls(address: entry.address, state: state, scale: 0.7)
+                TransportControls(address: address, state: state, scale: 0.7)
                 Spacer(minLength: 8)
-                VolumeControls(address: entry.address, state: state, showSegments: false)
+                VolumeControls(address: address, state: state, showSegments: false)
                     .fixedSize()
             }
         }
@@ -300,6 +308,7 @@ struct MediumPlayerView: View {
 
 struct SmallPlayerView: View {
     let entry: PlayerEntry
+    let address: String
     let state: PlayerState
 
     var body: some View {
@@ -307,7 +316,7 @@ struct SmallPlayerView: View {
             HStack(alignment: .top) {
                 Artwork(image: entry.artwork, size: 52)
                 Spacer(minLength: 0)
-                ControlButton(address: entry.address, action: PlayerAction.toggle,
+                ControlButton(address: address, action: PlayerAction.toggle,
                               systemImage: state.isPlaying ? "pause.circle.fill" : "play.circle.fill", size: 34)
             }
             Spacer(minLength: 0)
@@ -323,24 +332,43 @@ struct SmallPlayerView: View {
 }
 
 struct ErrorView: View {
-    let entry: PlayerEntry
+    let address: String
+    let message: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Label("Volumio", systemImage: "wifi.exclamationmark")
                 .font(.headline)
-            Text(entry.error ?? "No data")
+            Text(message ?? "Can't reach \(address)")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.75))
             Text("Works on the same Wi-Fi as the player. Long-press › Edit Widget to change the address.")
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.5))
             Spacer(minLength: 0)
-            Button(intent: PlayerCommandIntent(address: entry.address, action: "refresh")) {
+            Button(intent: PlayerCommandIntent(address: address, action: "refresh")) {
                 Label("Try again", systemImage: "arrow.clockwise")
                     .font(.caption.weight(.semibold))
             }
             .buttonStyle(.plain)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(16)
+    }
+}
+
+/// Shown until the widget has an address.
+struct SetupView: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("Volumio", systemImage: "hifispeaker.fill")
+                .font(.headline)
+            Text("Set the player's address")
+                .font(.subheadline.weight(.semibold))
+            Text("Long-press this widget › Edit Widget › Address, and enter the same address as in the app, e.g. 192.168.1.40.")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.65))
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(16)
