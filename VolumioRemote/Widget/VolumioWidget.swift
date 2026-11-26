@@ -236,6 +236,7 @@ struct VolumeControls: View {
                     .font(.system(.subheadline, design: .rounded).weight(.semibold))
                     .monospacedDigit()
                     .frame(minWidth: 28, alignment: .trailing)
+                    .padding(.trailing, 2)
             }
         }
     }
@@ -249,7 +250,7 @@ struct LargePlayerView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .center, spacing: 14) {
-                Artwork(image: entry.artwork, size: 118)
+                Artwork(image: entry.artwork, size: 136)
                 VStack(alignment: .leading, spacing: 6) {
                     TrackText(state: state, titleFont: .title3.weight(.bold), lines: 3)
                     if let album = state.album {
@@ -283,14 +284,15 @@ struct MediumPlayerView: View {
     let state: PlayerState
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 12) {
-                Artwork(image: entry.artwork, size: 64)
-                VStack(alignment: .leading, spacing: 2) {
-                    TrackText(state: state, titleFont: .subheadline.weight(.bold), lines: 1)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 12) {
+                Artwork(image: entry.artwork, size: 86)
+                VStack(alignment: .leading, spacing: 3) {
+                    TrackText(state: state, titleFont: .headline, lines: 2)
                     Text(state.statusText)
                         .font(.caption2)
                         .foregroundStyle(.white.opacity(0.55))
+                        .lineLimit(1)
                 }
                 Spacer(minLength: 0)
             }
@@ -302,7 +304,9 @@ struct MediumPlayerView: View {
                     .fixedSize()
             }
         }
-        .padding(12)
+        .padding(.leading, 12)
+        .padding(.trailing, 18)
+        .padding(.vertical, 12)
     }
 }
 
